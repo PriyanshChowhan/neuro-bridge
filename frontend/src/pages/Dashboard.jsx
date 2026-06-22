@@ -125,8 +125,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      setLoading(true);
+
+    const loadDashboardData = async ({ initialLoad = false } = {}) => {
+      if (initialLoad) setLoading(true);
       try {
         const [r, d] = await Promise.all([api.get("/realtime/latest"), api.get("/daily/latest")]);
         if (cancelled) return;
@@ -138,9 +139,18 @@ export default function Dashboard() {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
+    };
+
+    loadDashboardData({ initialLoad: true });
+    const intervalId = setInterval(() => {
+      if (!cancelled) {
+        loadDashboardData();
+      }
+    }, 3000);
+
     return () => {
       cancelled = true;
+      clearInterval(intervalId);
     };
   }, []);
 

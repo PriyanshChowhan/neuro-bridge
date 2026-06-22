@@ -114,7 +114,7 @@ export async function getAmbulanceLLMResponse(patientName, patientAddress, vital
     console.log(`[Ambulance Call] Generating emergency dispatch message`);
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
         const result = await model.generateContent([
             getAmbulanceSystemPrompt(patientName, patientAddress, vitalsContext, emergencyDetails)
         ]);

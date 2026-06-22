@@ -1,16 +1,102 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
-import { AlertTriangle, Brain, HeartPulse, RotateCcw, Server } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Brain,
+  Droplets,
+  Flame,
+  Footprints,
+  HeartPulse,
+  RotateCcw,
+  Server,
+} from "lucide-react";
 import Nav from "../components/Nav";
 import { api } from "../api/client";
+
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+};
+
+const normalizeRealtime = (payload) => {
+  if (!payload) return null;
+  if (payload.data && typeof payload.data === "object") return payload.data;
+  return payload;
+};
+
+function MetricCard({ icon: Icon, label, value, unit }) {
+  return (
+    <div className="rounded-md border border-border bg-background/60 p-4">
+      <div className="flex items-center gap-3">
+        <div className="rounded-md bg-primary/10 p-2 text-primary">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div>
+          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {label}
+          </div>
+          <div className="mt-1 text-lg font-semibold text-foreground">
+            {value ?? "—"}
+            {value != null && unit ? (
+              <span className="ml-1 text-xs font-medium text-muted-foreground">{unit}</span>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Test() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [latestRealtime, setLatestRealtime] = useState(null);
 
   const SIMULATOR_BASE =
-    import.meta.env.VITE_SIMULATOR_URL || "https://neurobridge-simulator.onrender.com";
+    import.meta.env.VITE_SIMULATOR_URL || "http://localhost:4000";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLatestRealtime = async () => {
+      try {
+        const res = await api.get("/realtime/latest");
+        if (cancelled) return;
+        setLatestRealtime(normalizeRealtime(res?.data));
+      } catch {
+        if (!cancelled) setLatestRealtime(null);
+      }
+    };
+
+    loadLatestRealtime();
+    const intervalId = setInterval(loadLatestRealtime, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  const refreshLatestRealtime = async () => {
+    try {
+      const res = await api.get("/realtime/latest");
+      setLatestRealtime(normalizeRealtime(res?.data));
+    } catch {
+      // Keep the last known reading visible if refresh fails.
+    }
+  };
 
   const sendSimulator = async (endpoint, body) => {
     setError("");
@@ -18,6 +104,7 @@ export default function Test() {
     try {
       const res = await axios.post(`${SIMULATOR_BASE}${endpoint}`, body || {});
       setResult(res.data);
+      await refreshLatestRealtime();
     } catch (err) {
       setError(err?.response?.data?.error || err?.message || "Simulator request failed");
     } finally {
@@ -31,6 +118,7 @@ export default function Test() {
     try {
       const res = await api.post("/realtime", payload);
       setResult(res.data);
+      await refreshLatestRealtime();
     } catch (err) {
       setError(err?.response?.data?.error || err?.message || "Request failed");
     } finally {
@@ -151,6 +239,28 @@ export default function Test() {
             </p>
           </section>
         </div>
+
+        <section className="mt-6 rounded-lg border border-border bg-card p-5 shadow-health">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Latest Realtime Values</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Updated from the most recent button action or backend reading.
+              </p>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Last update: <span className="font-medium text-foreground">{formatDateTime(latestRealtime?.timestamp)}</span>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <MetricCard icon={Activity} label="Heart Rate" value={latestRealtime?.heart_rate} unit="bpm" />
+            <MetricCard icon={Droplets} label="SpO₂" value={latestRealtime?.spo2} unit="%" />
+            <MetricCard icon={Brain} label="Stress Level" value={latestRealtime?.stress_level} />
+            <MetricCard icon={Footprints} label="Steps" value={latestRealtime?.steps} />
+            <MetricCard icon={Flame} label="Calories" value={latestRealtime?.calories_burned} unit="kcal" />
+          </div>
+        </section>
 
         <section className="mt-6 rounded-lg border border-border bg-card p-5 shadow-health">
           <h2 className="text-sm font-semibold text-foreground">Response</h2>

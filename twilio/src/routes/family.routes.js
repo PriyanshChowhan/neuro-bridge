@@ -221,7 +221,7 @@ export async function getFamilyLLMResponse(convo, callSid, patientEmotionalState
     console.log(`[${callSid}] Sending family notification prompt to LLM`);
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
         
         const therapistSummary = familyConversations[callSid]?.therapistSummary || "No prior session summary available";
         

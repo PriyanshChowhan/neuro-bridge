@@ -6,6 +6,7 @@ import MONGODB from "./db/index.js";
 import dailyRoutes from "./routes/daily.routes.js";
 import realtimeRoutes from "./routes/realtime.routes.js";
 import personalRoutes from "./routes/personal.routers.js";
+import { connectSimulatorBridge } from "./services/simulatorBridge.js";
 
 import userRoutes from "./routes/user.routers.js";
 
@@ -23,6 +24,8 @@ app.use("/api/daily", dailyRoutes);
 app.use("/api/realtime", realtimeRoutes);
 app.use("/api/personal", personalRoutes);
 app.use("/api/user", userRoutes);
+
+connectSimulatorBridge();
 
 // Home Route
 app.get("/", (req, res) => {

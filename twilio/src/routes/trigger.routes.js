@@ -25,7 +25,7 @@ function enqueueLLMTask(callSid, taskFn) {
 }
 
 async function callGenerativeModelWithRetry(partsArray, maxRetries = 3) {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
   const contentParts = Array.isArray(partsArray) ? partsArray : [String(partsArray)];
   let attempt = 0;
   let wait = 500;
